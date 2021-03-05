@@ -1188,60 +1188,6 @@ shinyAppServer <- function(input, output, session) {
 
   #Data Analysis Functions for Mapping Dashboard and Fata Overview page  ---------------------------
 
-  #Function is used to calculated Cq value from a set of fluorescence data
-  add_CqValue <- function(flur_file, meta_file) {
-
-    #remove one to exclude CqValue column
-    cycle_number <- seq(ncol(flur_file) - 1)
-
-    #Number of samples
-    number_of_rows <- nrow(flur_file)
-
-    for (i in 1:number_of_rows) {
-
-      if (meta_file$userProvidedThresholdValue[i] == "Unable to Determine Threshold")
-      {flur_file$userProvidedCqValue[i] <- 40}
-
-      else{
-
-        flur_file$userProvidedCqValue[i] <-
-          th.cyc(
-            cycle_number,
-            as.numeric(flur_file[i, -c(ncol(flur_file))]),
-            r = round(as.numeric(
-              meta_file$userProvidedThresholdValue
-            )[i], 3),
-            linear = TRUE
-          )[1]
-
-
-      }}
-
-    return(flur_file)
-
-  }
-
-
-
-  #Function to add new rows and column names to stepOneplus dataframe
-  reformat_SOP_Flur_data <- function (flur_data) {
-    flur_df <- as.data.frame(matrix(nrow = 0, ncol = 40))
-    colnames(flur_df) <-  c(paste0("Cycle_Number", 1:40))
-
-    for (i in seq(from = 1, to = 3840, by = 40))
-    {
-      start <- i
-      end <- i + 39
-
-      one_row <- flur_data[1, start:end]
-      colnames(one_row) <- c(paste0("Cycle_Number", 1:40))
-
-      flur_df  <-  rbind(flur_df, one_row)
-
-    }
-    return(flur_df)
-  }
-
 
   #Function removes null records (controls or empty runs) from associated fluorescence file based on if sample name contains 'null' in metadata file.
   null_records_to_remove_flur <- function(meta_data, fluor_file) {
@@ -1307,96 +1253,6 @@ shinyAppServer <- function(input, output, session) {
 
   }
 
-
-
-  #Function toformat raw StepOnePlus fluorescence file.
-  process_SOP_uploaded_file <- function(fluorescence_file) {
-
-    #Remove rows above main table
-    fluorescence_file <- fluorescence_file[-c(1:6), ]
-
-    #Extract first row with column names
-    colnames(fluorescence_file) <- c(fluorescence_file[1,])
-
-    #Remove first row of table since it has column names in it
-    fluorescence_file <- fluorescence_file[-c(1),]
-
-    #Only keep first 3 columns (application can only deal with one dye currently)
-    fluorescence_file <- fluorescence_file[, 1:3]
-
-    #Changing Cycle class to numeric
-    fluorescence_file$Cycle <- as.numeric(fluorescence_file$Cycle)
-
-    #Sort well names then cycles
-    fluorescence_file <- fluorescence_file[order(fluorescence_file$Well, fluorescence_file$Cycle),]
-
-    #Creating empty data frame to populate
-    run_location <- as.data.frame(matrix(nrow = 96, ncol = 1))
-
-    #Populating Well name column with unique well names (96 names)
-    run_location[, 1] <- unique(fluorescence_file$Well)
-    colnames(run_location) <- c("run_location")
-
-
-    #Getting fluorescence values
-
-    #Turning StepOnePlus raw fluorescence data in to 1 by 3840 matrix with just fluorescence data
-    stepOnePlus_fluorescence_matrix <-  as.data.frame(t(fluorescence_file[,-c(1:2)]))
-
-    #Creating matrix, each row is a sample with the fluorescene values for each cycle
-    SOP_flur <- reformat_SOP_Flur_data(stepOnePlus_fluorescence_matrix)
-
-    return(SOP_flur)
-
-  }
-
-
-  #Function to format raw Biomeme two3/Franklin fluorescence file.
-  process_biomeme23_uploaded_file <- function(fluorescence_file) {
-
-    #Creating dataframe with fluorescence values and ct intensity value from biomem raw qPCR file
-    end_row <-(which(grepl('Raw Fluorescence', fluorescence_file$Run.Name))) - 2
-
-    qpcr_biomem23_fluorescence <- fluorescence_file[11:end_row, 2:41]
-
-
-    #Changing column names to consistent with naming covention in database
-    total_runs <- ncol(qpcr_biomem23_fluorescence)
-    colnames(qpcr_biomem23_fluorescence) <- c(paste0("Cycle_Number", 1:total_runs))
-
-
-    #change all values to numeric
-    cols = c(1:total_runs)
-    qpcr_biomem23_fluorescence[, cols] <- apply(qpcr_biomem23_fluorescence[, cols], 2, function(x)  as.numeric(as.character(x)))
-
-    return (qpcr_biomem23_fluorescence)
-  }
-
-
-  #Function to format raw MIC fluorescence file.
-  process_MIC_uploaded_file <- function(fluorescence_file) {
-
-    #Transpose fluorescence dataframe
-    qpcr_MIC_fluorescence <- as.data.frame(t(fluorescence_file))
-
-
-    #Change column names in fluorescence dataframe
-    total_runs <- ncol(qpcr_MIC_fluorescence)
-    colnames(qpcr_MIC_fluorescence) <-
-      c(paste0("Cycle_Number", 1:total_runs))
-
-
-    #Remove first row with cycle numbers
-    qpcr_MIC_fluorescence <- qpcr_MIC_fluorescence[-c(1),]
-
-
-    #change all values to numeric
-    cols = c(1:total_runs)
-    qpcr_MIC_fluorescence[, cols] <- apply(qpcr_MIC_fluorescence[, cols], 2,
-                                           function(x) as.numeric(as.character(x)))
-
-    return(qpcr_MIC_fluorescence)
-  }
 
 
   #Combing data from formatted fluorescence file and formatted metdata file (Same for MIC, Biomeme two3/Franklin, and StepOnePlus)
@@ -1634,93 +1490,6 @@ shinyAppServer <- function(input, output, session) {
   }
 
 
-  #Function calculates threshold value for each individual well on a qPCR plate based on raw absorbance values. The threshold function is based on the second derivative method to calculate the threshold value for qPCR data.
-  calculate_threshold_value <- function(fluorescence_values) {
-
-    fluorescence_values <- as.data.frame(t(fluorescence_values))
-
-    #New table with threshold data
-    thresholdData <- as.data.frame(matrix(nrow = ncol(fluorescence_values) , ncol = 1))
-    colnames(thresholdData) <- c("computedThresholdValue")
-
-    for (runSample in 1:ncol(fluorescence_values)) {
-
-      #Get the total number of thremocycler cycles for this sample
-      number_of_cycles <- length(fluorescence_values [,runSample])
-
-      #Set the initial reference absorbance to the minimum absorbance for the sample
-      reference_absorbance_value <- as.numeric(min(fluorescence_values[, runSample]))
-
-      #Set the initial absorbance cycle to the cycle with the minimum absorbance value
-      place_holder_cycle = which.min(fluorescence_values[, runSample])
-
-      #Calculate the absorbance range for the sample to be able to assess the percent change from cycle to cycle
-      absorb_range = as.numeric(max(fluorescence_values[, runSample])) - as.numeric(min(fluorescence_values[, runSample]))
-
-
-      #Step through the data points for the cycles from the minimum value to the end of the cycles to see if the data is inceasing within a certain percentage as compared to the total absorbance range for the sample
-      for (cycle_number_counter in which.min(fluorescence_values[, runSample]):length(fluorescence_values[, runSample])) {
-
-        #Calculate the difference between the reference (first, initially set to the minimum value for the dataset) value and the test value (current value in the data series for this loop)
-        difference = as.numeric(reference_absorbance_value - as.numeric(fluorescence_values[cycle_number_counter, runSample]))
-
-        #Check to see if the difference between the reference and the test divided by the total range is greater than 0.01.
-        #NOTE: could have the minimum variation between successive data points a user defined value here we use less than 1%
-        #If yes then making the place holder cycle equal to this cycle number as I will then only use data after this cycle to calculate the threshold.
-        if ( (difference / absorb_range) >= 0.01  ) {
-
-          #Update place holder value cycle number
-          place_holder_cycle <- cycle_number_counter
-        }
-
-        #Setting the reference equal to the value at this loop to represent the reference for the next loop where the test value will be incremented to the absorbance value for the next cycle for the sample
-        reference_absorbance_value <- as.numeric(fluorescence_values[cycle_number_counter, runSample])
-
-      } # Closing loop
-
-      ########################### Obtaining the threshold value ###########################
-
-      #NOTE: could have the minimum number of data points to calculate the threshold as a user defined value
-      #Finally, checking to see if more than 75% of the data points passed these quality checks for use in calculating the threshold. if not then bad data no threshold calculation is conducted.
-      if ((place_holder_cycle/number_of_cycles) < 0.75) {
-
-        #Subset dataframe to plot it
-        data_to_plot <- as.data.frame(as.numeric(t(fluorescence_values[, runSample])))
-
-        data_to_plot <- cbind(as.data.frame(c(1:number_of_cycles)), data_to_plot)
-
-        data_to_plot <- data_to_plot[-c(1:place_holder_cycle), ]
-
-        # This is the section where I get the second derivative of the curve and determine the value at which we will set the threshold
-
-        deriv <- function(x, y)
-          diff(y) / diff(x)
-
-        middle_pts <- function(x)
-          x[-1] - diff(x) / 2
-
-        second_d <- deriv(middle_pts(data_to_plot[, 1]), deriv(data_to_plot[, 1], data_to_plot[, 2]))
-
-        #Getting the max value of the second derivative data set. This will represent the points between the values on the curve between the end of the noise data and the end of the data set.
-        #So we need to add the max value index to the placeholder and then add one to round up to the next value to get the index (or cycle number) on the original data set.
-        max_deriv_value_index <- which.max(second_d)
-
-        #The theshold value at the cycle determined by the double derivitave is...
-        #we need to add one
-        threshold_value <- fluorescence_values[(place_holder_cycle + max_deriv_value_index +1),runSample]
-
-
-        #Add threshold value to dataframe
-        thresholdData$computedThresholdValue[runSample] <- threshold_value
-
-      }
-
-      #If no threshold value can be computed
-      else {thresholdData$computedThresholdValue[runSample] <- "Unable to Determine Threshold" }
-    }
-
-    return(thresholdData)
-  }
 
 
   #Mapping Dashboard page ---------------------------
@@ -2133,13 +1902,15 @@ shinyAppServer <- function(input, output, session) {
   ctIntensity_list <- reactive({
     if (!is.null(uploaded_data()) | dbExists == 'Yes') {
       data <- as.data.frame(mergedData())
-      ctintensity_updated <- as.character(unique(data$CqIntensity))
+      ctintensity_updated <- as.character(unique(c(as.character(unique(data$CqIntensity)),
+                               as.character(unique(data$CqIntensitySystemCalculated)))))
       return(ctintensity_updated)}
 
 
     else {
       return(NULL)}
   })
+
 
   observe({
     updatePickerInput(session, "CqIntensity_input",

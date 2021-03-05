@@ -30,4 +30,11 @@ utils::globalVariables(c("db_int",
                           "LOQ",
                           "cycles",
                          "th.cyc",
-                         "Fluorescence"))
+                         "Fluorescence",
+                         "calculate_threshold_value",
+                         "process_MIC_uploaded_file",
+                         "process_SOP_uploaded_file",
+                         "process_biomeme23_uploaded_file",
+                         "reformat_SOP_Flur_data",
+                         "add_CqValue",
+                         "Cycle_Number1"))

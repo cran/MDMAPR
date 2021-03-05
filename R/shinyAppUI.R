@@ -67,13 +67,17 @@ shinyAppUI <- dashboardPage(
 
                   column(width = 12,
                          box(width = NULL, solidHeader = TRUE,
-                             leafletOutput("mymap", height = 400),
+                             leafletOutput("mymap", height = 460),
 
                              #Second Row on page for filter functions
                              fluidRow(
-                               column(2,
 
-                                      h4("Filter Options"),
+                               div(style='height:300px; overflow-y: scroll',
+                                   box( width = 12,
+                                        title = "Filter Options",
+                                        status = "warning",
+                                        solidHeader = TRUE,
+                               column(2,
 
                                       #Radio button to select what type of Cq value you want to based on threshold vaue (User provided or system calculated)
                                       radioButtons("thresholdValueButton",
@@ -134,8 +138,6 @@ shinyAppUI <- dashboardPage(
                                ),
 
                                column(4, offset = 1,
-
-                                      h4("    ."),
 
 
                                       #Dropdown menu for family type
@@ -250,7 +252,7 @@ shinyAppUI <- dashboardPage(
                                                column(4, actionButton("reset",
                                                                       "Reset Files"))))
 
-                             ))))),
+                             ))))))),
 
               #Download Mapped data
               fluidRow(p(strong("Mapped Markers Metadata"),
