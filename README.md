@@ -9,11 +9,11 @@
 
 <img src="images/mdmaprlogo.png" width=400>
 
-The MDMAPR 2.0 is a Shiny web application that is able to merge raw qPCR fluorescence data and metadata together to facilitate the spatial visualization of species presence/absence detections. The application also has the ability to visualize qPCR fluorescence curves and standard curves to evaluate data quality. 
+The MDMAPR 2.0 is an open-source and extensible Shiny web application that is able to merge raw qPCR fluorescence data and metadata together to facilitate the spatial visualization of species presence/absence detections. The application also has the ability to visualize qPCR fluorescence curves and standard curves to evaluate data quality. MDMAPR 2.0 aims to centralize varied qPCR data, which includes data from pathogen and environmental qPCR species detection studies, gene expression studies, and quantification studies used in identifying pathogen-associated health threats.
 
-The MDMAPR 2.0 shiny application has the option to be connected to a custom developed MySQL database in order to populate the applications interface with data. Data can also be uploaded directly on the application for analysis. The MDMAPR 2.0 is built using R shinydashboard which is an open-source R package for web application development.
+The MDMAPR 2.0 shiny application has the option to be connected to a custom developed MySQL database in order to populate the applications interface with data. Data can also be uploaded directly on the application for analysis.
 
-To learn how to set up a MDMAPR 2.0 MySQL database to run with the MDMAPR Shiny application please refer to the [wiki](https://github.com/AlkaBenawra/MDMAPR/wiki).
+To learn how to set up a MDMAPR 2.0 MySQL database to run with the MDMAPR 2.0 Shiny application please refer to the [wiki](https://github.com/AlkaBenawra/MDMAPR/wiki).
 
 The MDMAPR 2.0 was developed by Alka Benawra at the University of Guelph. 
 
@@ -52,6 +52,38 @@ dbVariables(user = "root", password = "Test23!", dbname = 'MDMap_2.0', host = "1
 launchApp()
 
 ```
+
+
+## Example on how to format raw qPCR fluoresence file data from MIC, StepOnePlus or Biomeme two3/Franklin machines into a table that includes rows for each well location on qPCR plate and the associated fluorescence data for each reaction cycle. 
+The table is written to the local machine directory as a CSV file. The formatted data can be copied and pasted into the [results_Table](https://github.com/HannerLab/MDMAPR/blob/master/MySQL/MySQL_Table_Template_Files/results_Table.csv) or [standardCurveResults_Table](https://github.com/HannerLab/MDMAPR/blob/master/MySQL/MySQL_Table_Template_Files/standardCurveResults_Table.csv), which are used in the MDMAPR 2.0 MySQL database.
+``` r
+library(MDMAPR)
+
+#Use formatRawFluorescenceFile function to format raw MIC qPCR fluorescence file.
+formatRawFluorescenceFile(rawFluorescenceFile = "MIC_raw_fluorescence_data.csv",
+                          platform = "MIC", 
+                          rawFluorescenceFile = "MIC_formatted_fluorescence_data.csv")
+
+```
+
+
+## Example on how to add systemCalculatedThresholdValue and systemCalculatedCqValue to the results_Table and standardCurveResults_Table files. 
+The results_Table and standardCurveResults_Table files must have the formatted fluorescence data already input in the file in order for the addThresholdCq function to work. Users can also use the addThresholdCq function to add the userProvidedCqValue's to the file by setting the calculateUserProvidedCq parameter to "Yes". The userProvidedThresholdValue's must be provided in the results_Table and standardCurveResults_Table in order for the addThresholdCq function to calculate the userProvidedCqValue's.
+
+``` r
+library(MDMAPR)
+
+#Use addThresholdCq() to add systemCalculatedThresholdValue, systemCalculatedCqValue, and userProvidedCqValue to results_Table files.
+addThresholdCq(file = "results_Table.csv", 
+               calculateUserProvidedCq = "Yes")
+
+#Use addThresholdCq() to add systemCalculatedThresholdValue and systemCalculatedCqValue to standardCurveResults_Table files. The userProvidedCqValue is not added. 
+addThresholdCq(file "standardCurveResults_Table.csv", 
+               calculateUserProvidedCq = "No")
+
+
+```
+
 
 
 ## Mapping Dashboard

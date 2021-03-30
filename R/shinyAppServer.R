@@ -74,6 +74,7 @@
 #' @importFrom stats na.omit
 #' @importFrom stats quantile
 #' @importFrom stats residuals
+#' @importFrom bslib is_bs_theme
 
 
 shinyAppServer <- function(input, output, session) {

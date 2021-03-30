@@ -14,7 +14,7 @@
 #' @export
 #'
 #' @usage formatRawFluorescenceFile(rawFluorescenceFile, platform, outputFileName)
-
+#'
 
 formatRawFluorescenceFile <-function(rawFluorescenceFile, platform, outputFileName){
 
@@ -93,6 +93,8 @@ formatRawFluorescenceFile <-function(rawFluorescenceFile, platform, outputFileNa
 #' @export
 #'
 #' @usage addThresholdCq(file, calculateUserProvidedCq)
+
+
 
 
 
