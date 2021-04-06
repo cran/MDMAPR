@@ -75,6 +75,7 @@
 #' @importFrom stats quantile
 #' @importFrom stats residuals
 #' @importFrom bslib is_bs_theme
+#' @import htmlwidgets
 
 
 shinyAppServer <- function(input, output, session) {
